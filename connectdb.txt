@@ -1,0 +1,96 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+
+	_ "github.com/lib/pq"
+)
+
+type CurrencyInterface interface {
+	GetList()
+	GetByID()
+	Create()
+	Delete()
+}
+
+type Currency struct {
+	Currency_id string
+	Currency_pg string
+	Currency_jg string
+	Currency_nr int
+}
+
+var db *sql.DB
+var err error
+var currencys []Currency
+
+func (currency Currency) GetList() {
+	rows, err := db.Query("SELECT * FROM currency_pg")
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		currency := Currency{}
+		err := rows.Scan(&currency.Currency_id, &currency.Currency_jg, &currency.Currency_pg, &currency.Currency_nr)
+		if err != nil {
+			log.Println(err)
+		}
+		currencys = append(currencys, currency)
+		fmt.Println(currency)
+	}
+}
+func (currency Currency) GetByID() {
+	row, err := db.Query("SELECT * FROM currency_pg WHERE Currency_id = '" + currency.Currency_id + "'")
+	if err != nil {
+		panic(err)
+	}
+
+	defer row.Close()
+
+	for row.Next() {
+		curr := Currency{}
+		err := row.Scan(&curr.Currency_id, &curr.Currency_jg, &curr.Currency_pg, &curr.Currency_nr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(curr)
+	}
+}
+func (currency Currency) Create() {
+	query := `INSERT INTO "currency_pg"("currency_id", "currency_pg", "currency_jg", "currency_nr") VALUES ($1, $2, $3, $4)`
+	_, err := db.Exec(query, currency.Currency_id, currency.Currency_pg, currency.Currency_jg, currency.Currency_nr)
+	if err != nil {
+		fmt.Errorf("failed to save to database: %v", err)
+	}
+}
+func (currency Currency) Delete() {
+	fmt.Println(currency.Currency_id)
+	_, err := db.Exec("DELETE FROM currency_pg WHERE currency_id = $1", currency.Currency_id)
+	if err != nil {
+		fmt.Println("Delete failed", err)
+	}
+}
+func init() {
+	connectStr := "host=localhost user=postgres password=Ntdd1207 dbname=currency port=5432 sslmode=disable"
+	db, err = sql.Open("postgres", connectStr)
+	if err != nil {
+		log.Fatal(err) // Handle the error by logging it and terminating the program
+	}
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err) // Handle the error by logging it and terminating the program
+	}
+	fmt.Println("Connect Successful")
+}
+
+func main() {
+	// var currencyInterface CurrencyInterface = Currency{}
+	// currencyInterface.GetList()
+	var currencyInterfaceID CurrencyInterface = Currency{}
+	currencyInterfaceID.Delete()
+
+}
